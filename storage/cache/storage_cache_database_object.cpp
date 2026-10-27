@@ -125,9 +125,30 @@ Error DatabaseObject::ioError(const QString &path) const {
 }
 
 void DatabaseObject::open(EncryptionKey &&key, FnMut<void(Error)> &&done) {
+	openWithChecks(std::move(key), nullptr, nullptr, std::move(done));
+}
+
+void DatabaseObject::openWithChecks(EncryptionKey &&key,
+									FnMut<Error()> &&beforeOpen,
+									FnMut<Error()> &&afterOpen,
+									FnMut<void(Error)> &&done) {
 	close(nullptr);
 
-	const auto error = openSomeBinlog(std::move(key));
+	auto error = beforeOpen ? beforeOpen() : Error::NoError();
+	if (error.type == Error::Type::None) {
+		error = openSomeBinlog(std::move(key));
+	}
+	if ((error.type == Error::Type::None) && afterOpen) {
+		error = afterOpen();
+		if (error.type != Error::Type::None) {
+			if (_binlog.isOpen()) {
+				_binlog.close();
+			}
+			clearState();
+			invokeCallback(done, error);
+			return;
+		}
+	}
 	if (error.type != Error::Type::None) {
 		close(nullptr);
 	}

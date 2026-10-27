@@ -33,6 +33,8 @@ public:
 	void updateSettings(const SettingsUpdate &update);
 
 	void open(EncryptionKey &&key, FnMut<void(Error)> &&done);
+	void openWithChecks(EncryptionKey &&key, FnMut<Error()> &&beforeOpen,
+						FnMut<Error()> &&afterOpen, FnMut<void(Error)> &&done);
 	void close(FnMut<void()> &&done);
 
 	void put(

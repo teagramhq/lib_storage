@@ -36,6 +36,17 @@ void Database::open(EncryptionKey &&key, FnMut<void(Error)> &&done) {
 	});
 }
 
+void Database::openWithChecks(EncryptionKey &&key, FnMut<Error()> &&beforeOpen,
+							  FnMut<Error()> &&afterOpen,
+							  FnMut<void(Error)> &&done) {
+	_wrapped.with([key = std::move(key), beforeOpen = std::move(beforeOpen),
+				   afterOpen = std::move(afterOpen),
+				   done = std::move(done)](Implementation &unwrapped) mutable {
+		unwrapped.openWithChecks(std::move(key), std::move(beforeOpen),
+								 std::move(afterOpen), std::move(done));
+	});
+}
+
 void Database::close(FnMut<void()> &&done) {
 	_wrapped.with([
 		done = std::move(done)
