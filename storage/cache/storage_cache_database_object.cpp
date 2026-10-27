@@ -1299,17 +1299,20 @@ void DatabaseObject::clear(FnMut<void(Error)> &&done) {
 void DatabaseObject::clearWithChecks(bool closeBefore,
 									 FnMut<Error()> &&beforeClear,
 									 FnMut<void(Error)> &&done) {
-	if (!_binlog.isOpen()) {
+	if (!_binlog.isOpen() && !closeBefore) {
 		invokeCallback(done, ioError(versionPath()));
 		return;
 	}
 	const auto error = beforeClear ? beforeClear() : Error::NoError();
 	if (error.type != Error::Type::None) {
-		close(nullptr);
+		if (_binlog.isOpen()) {
+			_binlog.close();
+			clearState();
+		}
 		invokeCallback(done, error);
 		return;
 	}
-	if (closeBefore) {
+	if (closeBefore && _binlog.isOpen()) {
 		close(nullptr);
 	}
 	clear(std::move(done));
