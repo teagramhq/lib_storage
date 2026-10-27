@@ -65,6 +65,8 @@ public:
 	rpl::producer<Stats> stats() const;
 
 	void clear(FnMut<void(Error)> &&done);
+	void clearWithChecks(bool closeBefore, FnMut<Error()> &&beforeClear,
+						 FnMut<void(Error)> &&done);
 	void clearByTag(uint8 tag, FnMut<void(Error)> &&done);
 	void waitForCleaner(FnMut<void()> &&done);
 

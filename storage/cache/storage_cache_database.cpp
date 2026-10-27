@@ -190,6 +190,15 @@ void Database::clear(FnMut<void(Error)> &&done) {
 	});
 }
 
+void Database::clearWithChecks(bool closeBefore, FnMut<Error()> &&beforeClear,
+							   FnMut<void(Error)> &&done) {
+	_wrapped.with([closeBefore, beforeClear = std::move(beforeClear),
+				   done = std::move(done)](Implementation &unwrapped) mutable {
+		unwrapped.clearWithChecks(closeBefore, std::move(beforeClear),
+								  std::move(done));
+	});
+}
+
 void Database::clearByTag(uint8 tag, FnMut<void(Error)> &&done) {
 	_wrapped.with([
 		tag,

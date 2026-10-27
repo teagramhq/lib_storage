@@ -1296,6 +1296,25 @@ void DatabaseObject::clear(FnMut<void(Error)> &&done) {
 	open(std::move(key), std::move(done));
 }
 
+void DatabaseObject::clearWithChecks(bool closeBefore,
+									 FnMut<Error()> &&beforeClear,
+									 FnMut<void(Error)> &&done) {
+	if (!_binlog.isOpen()) {
+		invokeCallback(done, ioError(versionPath()));
+		return;
+	}
+	const auto error = beforeClear ? beforeClear() : Error::NoError();
+	if (error.type != Error::Type::None) {
+		close(nullptr);
+		invokeCallback(done, error);
+		return;
+	}
+	if (closeBefore) {
+		close(nullptr);
+	}
+	clear(std::move(done));
+}
+
 void DatabaseObject::clearByTag(uint8 tag, FnMut<void(Error)> &&done) {
 	const auto hadStale = !_stale.empty();
 	for (const auto &[key, entry] : _map) {
